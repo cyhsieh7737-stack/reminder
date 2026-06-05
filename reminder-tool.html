@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💡 靈感提醒</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: #e0ddd6;
+    --accent: #d4a017;
+    --accent-dark: #a07810;
+    --text: #1a1a1a;
+    --muted: #888880;
+    --danger: #c0392b;
+    --fired-bg: #fffbeb;
+    --fired-border: #d4a017;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Serif TC', serif; min-height: 100vh; }
+
+  /* Login */
+  #login-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:24px; }
+  .login-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:36px 32px; display:flex; flex-direction:column; align-items:center; gap:18px; max-width:360px; width:100%; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
+  .login-box h1 { font-size:1.6rem; color:var(--accent-dark); }
+  .login-box p { color:var(--muted); font-size:0.88rem; text-align:center; line-height:1.9; }
+  #google-login-btn { display:flex; align-items:center; gap:10px; background:#fff; color:#333; border:1px solid #ddd; border-radius:8px; padding:12px 22px; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:'Noto Serif TC',serif; box-shadow:0 1px 4px rgba(0,0,0,0.12); width:100%; justify-content:center; transition:box-shadow 0.2s; }
+  #google-login-btn:hover { box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+  #login-error { color:var(--danger); font-size:0.8rem; text-align:center; display:none; }
+
+  /* App */
+  #app { display:none; flex-direction:column; min-height:100vh; }
+  header { background:var(--surface); padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:10; }
+  header h1 { font-size:1.15rem; font-weight:700; color:var(--accent-dark); }
+  #clock { font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--muted); }
+  #user-info { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  #user-avatar { width:26px; height:26px; border-radius:50%; border:2px solid var(--border); }
+  #user-name { font-size:0.74rem; color:var(--muted); max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #logout-btn { font-size:0.7rem; padding:3px 8px; border:1px solid var(--border); background:transparent; color:var(--muted); border-radius:4px; cursor:pointer; font-family:'Noto Serif TC',serif; }
+
+  /* Desktop layout */
+  .app-body { display:flex; flex:1; }
+
+  /* Form */
+  .form-panel { width:340px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); padding:20px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+  .panel-title { font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:4px; }
+  input[type="text"], textarea, input[type="datetime-local"] { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:9px 11px; font-family:'Noto Serif TC',serif; font-size:0.88rem; outline:none; transition:border-color 0.2s; resize:none; }
+  input:focus, textarea:focus { border-color:var(--accent); background:#fff; }
+  textarea { min-height:90px; line-height:1.7; }
+  .quick-times { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .qt { font-size:0.7rem; padding:4px 9px; border:1px solid var(--border); background:#fff; color:var(--muted); border-radius:20px; cursor:pointer; font-family:'Noto Serif TC',serif; transition:all 0.15s; }
+  .qt:hover { border-color:var(--accent); color:var(--accent-dark); }
+  #add-btn { background:var(--accent-dark); color:#fff; border:none; border-radius:7px; padding:11px; font-size:0.92rem; font-weight:700; font-family:'Noto Serif TC',serif; cursor:pointer; transition:opacity 0.2s; margin-top:2px; }
+  #add-btn:hover { opacity:0.85; }
+  #add-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* List */
+  .list-panel { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .list-header { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .list-header h2 { font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .count-badge { font-family:'JetBrains Mono',monospace; font-size:0.68rem; background:var(--bg); border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:1px 7px; }
+  .tabs { display:flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-left:auto; background:#fff; }
+  .tab { font-size:0.7rem; padding:5px 12px; background:transparent; border:none; color:var(--muted); cursor:pointer; font-family:'Noto Serif TC',serif; border-right:1px solid var(--border); }
+  .tab:last-child { border-right:none; }
+  .tab.active { background:var(--accent-dark); color:#fff; font-weight:700; }
+  .empty { text-align:center; padding:50px 20px; color:var(--muted); font-size:0.88rem; line-height:2.2; }
+
+  /* Card */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+  .card.firing { background:var(--fired-bg); border-color:var(--fired-border); box-shadow:0 0 0 2px rgba(212,160,23,0.2); }
+  .card-top { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+  .card-title { font-size:0.95rem; font-weight:600; color:var(--text); flex:1; line-height:1.4; }
+  .card-time { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); white-space:nowrap; margin-top:3px; }
+  .card-body { font-size:0.83rem; color:#555; line-height:1.75; white-space:pre-wrap; border-left:2px solid var(--border); padding-left:10px; margin-bottom:10px; }
+  .firing .card-body { border-color:var(--accent); }
+  .card-footer { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .status-dot.pending { background:var(--muted); }
+  .status-dot.fired { background:var(--accent); animation:blink 1s ease infinite; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .status-text { font-size:0.72rem; color:var(--muted); flex:1; min-width:60px; }
+  .countdown { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:#888; }
+
+  .btn { border-radius:5px; padding:5px 12px; font-size:0.74rem; font-weight:700; font-family:'Noto Serif TC',serif; cursor:pointer; transition:opacity 0.2s; border:none; }
+  .btn-confirm-keep { background:var(--accent-dark); color:#fff; }
+  .btn-confirm-del { background:transparent; border:1px solid var(--accent); color:var(--accent-dark); }
+  .btn-edit { background:transparent; border:1px solid var(--border); color:var(--muted); }
+  .btn-delete { background:transparent; border:1px solid var(--border); color:var(--muted); }
+  .btn:hover { opacity:0.75; }
+
+  /* Mobile */
+  @media(max-width:680px) {
+    .app-body { flex-direction:column; }
+    .form-panel { width:100%; border-right:none; border-bottom:1px solid var(--border); }
+    .list-panel { padding:14px; }
+    #user-name { display:none; }
+  }
+
+  /* Modal */
+  #modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:100; padding:16px; }
+  #modal-overlay.show { display:flex; }
+  #modal { background:#fff; border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:400px; display:flex; flex-direction:column; gap:14px; }
+  #modal h3 { font-size:1rem; color:var(--accent-dark); }
+  #modal-footer { display:flex; gap:8px; justify-content:flex-end; }
+  #modal-save { background:var(--accent-dark); color:#fff; border:none; border-radius:6px; padding:8px 18px; font-size:0.88rem; font-weight:700; font-family:'Noto Serif TC',serif; cursor:pointer; }
+  #modal-cancel { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:8px 14px; font-size:0.84rem; font-family:'Noto Serif TC',serif; cursor:pointer; }
+
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:9px 18px; border-radius:20px; font-size:0.82rem; opacity:0; transition:all 0.25s; pointer-events:none; z-index:999; white-space:nowrap; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:2.5rem">💡</div>
+    <h1>靈感提醒</h1>
+    <p>記錄靈感，時間到自動提醒<br>電腦、手機資料即時同步</p>
+    <button id="google-login-btn" onclick="loginWithGoogle()">
+      <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.2 6.7 29.4 4.5 24 4.5 12.7 4.5 3.5 13.7 3.5 25S12.7 45.5 24 45.5 44.5 36.3 44.5 25c0-1.7-.2-3.3-.9-4.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.2 6.7 29.4 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/><path fill="#4CAF50" d="M24 45.5c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 36.8 26.8 37.5 24 37.5c-5.2 0-9.7-3.5-11.3-8.4l-6.5 5C9.5 41.1 16.3 45.5 24 45.5z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.3 5.3c-.4.4 6.7-4.9 6.7-14 0-1.7-.2-3.3-.9-4.9z"/></svg>
+      使用 Google 登入
+    </button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <span>💡</span>
+    <h1>靈感提醒</h1>
+    <span id="clock"></span>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <button id="logout-btn" onclick="logout()">登出</button>
+    </div>
+  </header>
+  <div class="app-body">
+    <div class="form-panel">
+      <div class="panel-title">新增提醒</div>
+      <div>
+        <label>標題</label>
+        <input type="text" id="inp-title" placeholder="e.g. 美股開盤策略" maxlength="60">
+      </div>
+      <div>
+        <label>詳細內容</label>
+        <textarea id="inp-body" placeholder="把你的靈感、策略、注意事項都寫下來…"></textarea>
+      </div>
+      <div>
+        <label>提醒時間</label>
+        <input type="datetime-local" id="inp-time">
+        <div class="quick-times">
+          <button class="qt" onclick="addMinutes(15)">+15分</button>
+          <button class="qt" onclick="addMinutes(30)">+30分</button>
+          <button class="qt" onclick="addMinutes(60)">+1小時</button>
+          <button class="qt" onclick="addMinutes(120)">+2小時</button>
+          <button class="qt" onclick="setToday(18,0)">今天18:00</button>
+          <button class="qt" onclick="setToday(21,30)">今天21:30</button>
+        </div>
+      </div>
+      <button id="add-btn" onclick="addReminder()">＋ 記錄靈感</button>
+    </div>
+    <div class="list-panel">
+      <div class="list-header">
+        <h2>所有提醒</h2>
+        <span class="count-badge" id="count-badge">0</span>
+        <div class="tabs">
+          <button class="tab active" onclick="setFilter('all',this)">全部</button>
+          <button class="tab" onclick="setFilter('pending',this)">待提醒</button>
+          <button class="tab" onclick="setFilter('fired',this)">已觸發</button>
+        </div>
+      </div>
+      <div id="list"><div style="text-align:center;padding:40px;color:var(--muted)">載入中…</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h3>✏️ 編輯提醒</h3>
+    <div><label>標題</label><input type="text" id="modal-title" maxlength="60"></div>
+    <div><label>詳細內容</label><textarea id="modal-body" style="min-height:80px"></textarea></div>
+    <div>
+      <label>下次提醒時間</label>
+      <input type="datetime-local" id="modal-time">
+      <div class="quick-times">
+        <button class="qt" onclick="modalAddMinutes(30)">+30分</button>
+        <button class="qt" onclick="modalAddMinutes(60)">+1小時</button>
+        <button class="qt" onclick="modalAddMinutes(120)">+2小時</button>
+        <button class="qt" onclick="modalSetToday(18,0)">今天18:00</button>
+        <button class="qt" onclick="modalSetToday(21,30)">今天21:30</button>
+      </div>
+    </div>
+    <div id="modal-footer">
+      <button id="modal-cancel" onclick="closeModal()">取消</button>
+      <button id="modal-save" onclick="saveEdit()">儲存並重設提醒</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, where, orderBy }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAlD1wVuKpnk9N3KxxOxQvdr7KFRDOchuk",
+  authDomain: "cyhsieh7737-stack.github.io",
+  projectId: "reminder-6b75a",
+  storageBucket: "reminder-6b75a.firebasestorage.app",
+  messagingSenderId: "150115495510",
+  appId: "1:150115495510:web:ecd647b858a97aef73d5f7"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+let currentUser = null;
+let reminders = [];
+let filter = 'all';
+let unsubscribe = null;
+let editingId = null;
+let countdownTimer = null;
+
+// ── Auth ──────────────────────────────────────────────
+// Try to get redirect result first (for mobile Safari)
+getRedirectResult(auth).then(result => {
+  if (result && result.user) {
+    // Successfully signed in via redirect
+  }
+}).catch(e => {
+  if (e.code && e.code !== 'auth/null-user' && e.code !== 'auth/no-auth-event') {
+    showLoginError('登入失敗：' + e.message);
+  }
+});
+
+window.loginWithGoogle = async () => {
+  // Use popup on desktop, redirect on mobile
+  const isMobileSafari = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  if (isMobileSafari || isAndroid) {
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch(e) {
+      showLoginError('登入失敗：' + e.message);
+    }
+  } else {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e) {
+      // Fallback to redirect if popup blocked
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        await signInWithRedirect(auth, provider);
+      } else {
+        showLoginError('登入失敗：' + e.message);
+      }
+    }
+  }
+};
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+
+window.logout = async () => {
+  if (unsubscribe) unsubscribe();
+  if (countdownTimer) clearInterval(countdownTimer);
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').style.flexDirection = 'column';
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+    subscribeReminders();
+    startCountdownTimer();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    reminders = [];
+  }
+});
+
+// ── Firestore ─────────────────────────────────────────
+function subscribeReminders() {
+  if (unsubscribe) unsubscribe();
+  const q = query(
+    collection(db, 'reminders'),
+    where('uid', '==', currentUser.uid),
+    orderBy('time', 'asc')
+  );
+  unsubscribe = onSnapshot(q, snap => {
+    reminders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    checkFired();
+    render();
+  });
+}
+
+async function checkFired() {
+  const now = Date.now();
+  for (const r of reminders) {
+    if (!r.fired && r.time <= now) {
+      await updateDoc(doc(db, 'reminders', r.id), { fired: true });
+      toast(`🔔 提醒：${r.title}`);
+    }
+  }
+}
+
+window.addReminder = async () => {
+  const title = document.getElementById('inp-title').value.trim();
+  const body  = document.getElementById('inp-body').value.trim();
+  const tval  = document.getElementById('inp-time').value;
+  if (!title) { toast('請輸入標題'); return; }
+  if (!tval)  { toast('請選擇提醒時間'); return; }
+  const btn = document.getElementById('add-btn');
+  btn.disabled = true; btn.textContent = '儲存中…';
+  try {
+    await addDoc(collection(db, 'reminders'), {
+      uid: currentUser.uid, title, body,
+      time: new Date(tval).getTime(), fired: false, createdAt: Date.now()
+    });
+    toast('✅ 靈感已記錄！');
+    document.getElementById('inp-title').value = '';
+    document.getElementById('inp-body').value = '';
+    document.getElementById('inp-time').value = '';
+  } catch(e) { toast('儲存失敗：' + e.message); }
+  btn.disabled = false; btn.textContent = '＋ 記錄靈感';
+};
+
+window.confirmReminder = (id) => {
+  toast('✅ 已確認！可在「已觸發」中編輯或刪除');
+};
+
+window.confirmAndDelete = async (id) => {
+  await deleteDoc(doc(db, 'reminders', id));
+  toast('🗑 已確認並刪除');
+};
+
+window.deleteReminder = async (id) => {
+  await deleteDoc(doc(db, 'reminders', id));
+  toast('已刪除');
+};
+
+window.openEdit = (id) => {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modal-title').value = r.title;
+  document.getElementById('modal-body').value = r.body || '';
+  document.getElementById('modal-time').value = toLocalISO(new Date(Date.now() + 3600000)); // default +1hr
+  document.getElementById('modal-overlay').classList.add('show');
+};
+
+window.closeModal = () => {
+  document.getElementById('modal-overlay').classList.remove('show');
+  editingId = null;
+};
+
+window.saveEdit = async () => {
+  if (!editingId) return;
+  const title = document.getElementById('modal-title').value.trim();
+  const body  = document.getElementById('modal-body').value.trim();
+  const tval  = document.getElementById('modal-time').value;
+  if (!title) { toast('請輸入標題'); return; }
+  if (!tval)  { toast('請選擇時間'); return; }
+  const newTime = new Date(tval).getTime();
+  await updateDoc(doc(db, 'reminders', editingId), {
+    title, body, time: newTime, fired: newTime <= Date.now()
+  });
+  closeModal();
+  toast('✅ 已更新，重新設定提醒！');
+};
+
+window.modalAddMinutes = m => { document.getElementById('modal-time').value = toLocalISO(new Date(Date.now() + m*60000)); };
+window.modalSetToday = (h,min) => { const d = new Date(); d.setHours(h,min,0,0); document.getElementById('modal-time').value = toLocalISO(d); };
+
+window.setFilter = (f, el) => {
+  filter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+};
+
+function startCountdownTimer() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    checkFired();
+    document.querySelectorAll('.countdown-span').forEach(el => {
+      const ts = parseInt(el.dataset.ts);
+      const txt = getCountdown(ts);
+      el.textContent = txt || '';
+    });
+  }, 1000);
+}
+
+function render() {
+  const list = document.getElementById('list');
+  let visible = reminders.filter(r => {
+    if (filter === 'pending') return !r.fired;
+    if (filter === 'fired')   return r.fired;
+    return true;
+  });
+  document.getElementById('count-badge').textContent = reminders.length;
+
+  if (visible.length === 0) {
+    list.innerHTML = `<div class="empty">📭 還沒有提醒<br><span style="font-size:0.82rem">在上方新增你的第一個靈感</span></div>`;
+    return;
+  }
+
+  list.innerHTML = visible.map(r => {
+    const d = new Date(r.time);
+    const timeStr = d.toLocaleString('zh-TW', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false });
+    const countdown = getCountdown(r.time);
+
+    let footer = '';
+    if (r.fired && filter !== 'fired') {
+      footer = `
+        <button class="btn btn-confirm-keep" onclick="confirmReminder('${r.id}')">✓ 確認</button>
+        <button class="btn btn-confirm-del" onclick="confirmAndDelete('${r.id}')">確認並刪除</button>`;
+    } else if (r.fired) {
+      footer = `
+        <button class="btn btn-edit" onclick="openEdit('${r.id}')">✏️ 編輯/重設時間</button>
+        <button class="btn btn-delete" onclick="deleteReminder('${r.id}')">刪除</button>`;
+    } else {
+      footer = `
+        ${countdown ? `<span class="countdown countdown-span" data-ts="${r.time}">${countdown}</span>` : ''}
+        <button class="btn btn-delete" onclick="deleteReminder('${r.id}')">刪除</button>`;
+    }
+
+    return `
+    <div class="card ${r.fired ? 'firing' : ''}">
+      <div class="card-top">
+        <div class="card-title">${esc(r.title)}</div>
+        <div class="card-time">${timeStr}</div>
+      </div>
+      ${r.body ? `<div class="card-body">${esc(r.body)}</div>` : ''}
+      <div class="card-footer">
+        <div class="status-dot ${r.fired ? 'fired' : 'pending'}"></div>
+        <span class="status-text">${r.fired ? '🔔 時間到了！' : '等待提醒中'}</span>
+        ${footer}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function getCountdown(ts) {
+  const diff = ts - Date.now();
+  if (diff <= 0) return null;
+  const h = Math.floor(diff/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+setInterval(() => {
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+}, 1000);
+
+function toLocalISO(d) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+window.toLocalISO = toLocalISO;
+window.addMinutes = m => { document.getElementById('inp-time').value = toLocalISO(new Date(Date.now() + m*60000)); };
+window.setToday = (h,min) => { const d = new Date(); d.setHours(h,min,0,0); document.getElementById('inp-time').value = toLocalISO(d); };
+
+let toastTimer;
+window.toast = msg => {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+};
+</script>
+</body>
+</html>
